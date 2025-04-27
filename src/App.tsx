@@ -1,35 +1,63 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { Row, Col } from "antd";
+import { useTranslation } from "./hooks/useTranslation";
+import Layout from "./components/Layout";
+import TranslationForm from "./features/translation/TranslationForm";
+import RecommendationPanel from "./features/recommendations/RecommendationPanel";
+import ErrorBoundary from "./components/ErrorBoundary";
+import { useLocale } from "./i18n";
+import styled from "styled-components";
 
-function App() {
-  const [count, setCount] = useState(0)
+const AppContainer = styled.div`
+  .translation-container {
+    // display: flex;
+    // flex-direction: column;
+    gap: 16px;
+
+    @media (min-width: 992px) {
+      flex-direction: row;
+
+      .translation-form {
+        flex: 7;
+      }
+
+      .recommendation-panel {
+        flex: 3;
+      }
+    }
+  }
+`;
+
+export default function App() {
+  const { sourceLanguage, targetLanguage, setSourceLanguage, setTargetLanguage, translate, result, loading, swapLanguages } =
+    useTranslation();
+
+  const { t } = useLocale();
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <ErrorBoundary>
+      <AppContainer>
+        <Layout>
+          <div className="translation-container">
+            <Row gutter={[16, 16]}>
+              <Col xs={24} lg={16} className="translation-form">
+                <TranslationForm
+                  sourceLanguage={sourceLanguage}
+                  targetLanguage={targetLanguage}
+                  onSourceLanguageChange={setSourceLanguage}
+                  onTargetLanguageChange={setTargetLanguage}
+                  onTranslate={translate}
+                  onSwapLanguages={swapLanguages}
+                  loading={loading}
+                  result={result}
+                />
+              </Col>
+              <Col xs={24} lg={8} className="recommendation-panel">
+                <RecommendationPanel result={result} />
+              </Col>
+            </Row>
+          </div>
+        </Layout>
+      </AppContainer>
+    </ErrorBoundary>
+  );
 }
-
-export default App
