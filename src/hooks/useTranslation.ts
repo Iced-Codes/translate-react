@@ -3,8 +3,10 @@ import { useRequest } from "ahooks";
 import { message } from "antd";
 import { TranslationResult, LanguageCode } from "../types";
 import { translateText } from "../utils/api";
+import { useSelector } from "react-redux";
 
 export const useTranslation = () => {
+  const { modelType } = useSelector((state: any) => state.modelTypeStore);
   const [sourceLanguage, setSourceLanguage] = useState<LanguageCode | "auto">("auto");
   const [targetLanguage, setTargetLanguage] = useState<LanguageCode>("zh");
   const [result, setResult] = useState<TranslationResult | null>(null);
@@ -23,7 +25,7 @@ export const useTranslation = () => {
 
   // 交换源语言和目标语言
   const swapLanguages = useCallback(() => {
-    if (sourceLanguage !== "auto" && result) {
+    if (sourceLanguage !== "auto") {
       const temp = sourceLanguage;
       setSourceLanguage(targetLanguage);
       setTargetLanguage(temp);
@@ -45,6 +47,7 @@ export const useTranslation = () => {
           text,
           sourceLanguage,
           targetLanguage,
+          model: modelType,
         });
         return result || null; // 确保返回值为 TranslationResult | null
       } catch (err) {
@@ -52,7 +55,7 @@ export const useTranslation = () => {
         return null;
       }
     },
-    [runAsync, sourceLanguage, targetLanguage]
+    [runAsync, sourceLanguage, targetLanguage, modelType]
   );
 
   // 保存翻译历史记录到localStorage

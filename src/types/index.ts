@@ -4,6 +4,7 @@ export type LanguageCode = string;
 // 翻译请求类型定义
 export interface TranslationRequest {
   text: string;
+  model: string;
   sourceLanguage: LanguageCode | "auto";
   targetLanguage: LanguageCode;
 }
@@ -15,6 +16,11 @@ export interface TranslationResult {
   sourceText: string;
   sourceLanguage: LanguageCode;
   targetLanguage: LanguageCode;
+  recommendations?: {
+    synonyms?: string[];
+    related_phrases?: string[];
+    usage_examples?: string[];
+  };
 }
 
 // 文件上传类型定义

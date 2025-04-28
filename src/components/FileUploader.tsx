@@ -111,13 +111,13 @@ export default function FileUploader({ onFileContent, maxSize = 5 }: FileUploade
 
   return (
     <StyledUploader>
-      {/* <Dragger name="file" multiple={false} showUploadList={false} beforeUpload={handleFile} disabled={uploading}>
+      <Dragger name="file" multiple={false} showUploadList={false} beforeUpload={handleFile} disabled={uploading}>
         <p className="ant-upload-drag-icon">
           <InboxOutlined />
         </p>
         <p className="ant-upload-text">点击或拖拽文件到此区域</p>
         <p className="ant-upload-hint">支持 .txt, .docx 格式文件, 最大 {maxSize}MB</p>
-      </Dragger> */}
+      </Dragger>
 
       {uploading && (
         <div className="progress-container">

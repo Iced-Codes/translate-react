@@ -12,9 +12,14 @@ export default defineConfig({
       imports: ["react", "ahooks", "react-router", "react-router-dom"],
     }),
   ],
+  resolve: {
+    alias: {
+      "@": "/src",
+    },
+  },
   server: {
     port: 3000,
-    open: true,
+    open: false,
     host: "0.0.0.0",
     proxy: {
       "/api": {

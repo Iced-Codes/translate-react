@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { Card, Button, Space, Row, Col, Typography, message, Select } from "antd";
+import { useState, useRef, useLayoutEffect } from "react";
+import { Card, Button, Space, Row, Col, Typography, message, Select, Tabs, List, Tag } from "antd";
 import { SwapOutlined, SoundOutlined, CopyOutlined } from "@ant-design/icons";
 import styled from "styled-components";
 import TextArea from "antd/es/input/TextArea";
@@ -7,9 +7,15 @@ import LanguageSelector from "../../components/LanguageSelector";
 import FileUploader from "../../components/FileUploader";
 import { LanguageCode, FileUploadResult, TranslationResult } from "../../types";
 import { useDispatch, useSelector } from "react-redux";
+import { marked } from "marked";
+import DOMpurify from "dompurify";
+// import { getSupportedModels } from "@/utils/api";
+// import highlight from "@babel/code-frame";
+// 修正导入路径 - 使用相对路径
 import { setModelType } from "@/store/modelTypeStore";
-import Clipboard from "clipboard";
-const { Text, Paragraph } = Typography;
+// import Clipboard from "clipboard";
+const { Text, Paragraph, Title } = Typography;
+const { TabPane } = Tabs;
 
 interface TranslationFormProps {
   sourceLanguage: LanguageCode | "auto";
@@ -55,6 +61,73 @@ const StyledCard = styled(Card)`
   }
 `;
 
+// 添加一个新的推荐组件
+interface RecommendationsSectionProps {
+  recommendations: {
+    synonyms?: string[];
+    related_phrases?: string[];
+    usage_examples?: string[];
+  };
+}
+
+const RecommendationsSection = ({ recommendations }: RecommendationsSectionProps) => {
+  // 检查recommendations是否存在以及是否有数据
+  const hasSynonyms = recommendations?.synonyms && recommendations.synonyms.length > 0;
+  const hasRelatedPhrases = recommendations?.related_phrases && recommendations.related_phrases.length > 0;
+  const hasUsageExamples = recommendations?.usage_examples && recommendations.usage_examples.length > 0;
+
+  if (!recommendations || (!hasSynonyms && !hasRelatedPhrases && !hasUsageExamples)) {
+    return null;
+  }
+
+  return (
+    <div style={{ marginTop: 16 }}>
+      <Title level={5}>相关推荐</Title>
+      <Tabs defaultActiveKey={hasSynonyms ? "synonyms" : hasRelatedPhrases ? "phrases" : "examples"}>
+        {hasSynonyms && (
+          <TabPane tab="同义词" key="synonyms">
+            <div style={{ padding: "8px 0" }}>
+              {recommendations.synonyms!.map((synonym: string, idx: number) => (
+                <Tag key={idx} color="blue" style={{ margin: "4px 8px 4px 0", padding: "4px 8px", fontSize: "14px" }}>
+                  {synonym}
+                </Tag>
+              ))}
+            </div>
+          </TabPane>
+        )}
+
+        {hasRelatedPhrases && (
+          <TabPane tab="相关短语" key="phrases">
+            <List
+              size="small"
+              dataSource={recommendations.related_phrases!}
+              renderItem={(item: string, index: number) => (
+                <List.Item key={index}>
+                  <Text>{item}</Text>
+                </List.Item>
+              )}
+            />
+          </TabPane>
+        )}
+
+        {hasUsageExamples && (
+          <TabPane tab="例句" key="examples">
+            <List
+              size="small"
+              dataSource={recommendations.usage_examples!}
+              renderItem={(item: string, index: number) => (
+                <List.Item key={index}>
+                  <Text>{item}</Text>
+                </List.Item>
+              )}
+            />
+          </TabPane>
+        )}
+      </Tabs>
+    </div>
+  );
+};
+
 export default function TranslationForm({
   sourceLanguage,
   targetLanguage,
@@ -70,6 +143,7 @@ export default function TranslationForm({
   const [sourceText, setSourceText] = useState("");
   const [isSpeaking, setIsSpeaking] = useState(false);
   const speechSynthesisRef = useRef<SpeechSynthesisUtterance | null>(null);
+  // const { data, error, loading: l } = useRequest(getSupportedModels);
 
   // 字符计数
   const charCount = sourceText.length;
@@ -142,19 +216,43 @@ export default function TranslationForm({
     setIsSpeaking(true);
   };
 
-  const translatedText = useRef<any>(null);
+  // const translatedText = useRef<any>(null);
   // 复制翻译结果
   const copyResult = () => {
     if (!result) return;
-    const clipboard = new Clipboard(translatedText.current);
-    console.log("🚀 ~ copyResult ~ clipboard:", clipboard);
-    clipboard.on("success", (e) => {
-      message.success(`已复制到剪贴板${e.text}`);
-    });
-    clipboard.on("error", () => {
-      message.error("复制失败");
-    });
+    // const clipboard = new Clipboard(translatedText.current, {
+    //   target(elem) {
+    //     console.log("🚀 ~ target ~ elem:", elem);
+    //     return elem.nextElementSibling;
+    //   },
+    // });
+    // console.log("🚀 ~ copyResult ~ clipboard:", clipboard);
+    // clipboard.on("success", (e) => {
+    //   message.success(`已复制到剪贴板${e.text}`);
+    // });
+    // clipboard.on("error", () => {
+    //   message.error("复制失败");
+    // });
+    navigator.clipboard.writeText(result.translatedText).then(
+      () => {
+        message.success("已复制到剪贴板");
+      },
+      () => {
+        message.error("复制失败");
+      }
+    );
   };
+  const [translatedText, setTranslatedText] = useState("");
+  useLayoutEffect(() => {
+    if (result) {
+      console.log("🚀 ~ useLayoutEffect ~ result:", result);
+
+      setTranslatedText(() => marked.parse(DOMpurify.sanitize(result.translatedText) as string) as string);
+      // const text = highlight(marked.parse(DOMpurify.sanitize(result.translatedText) as string));
+
+      // console.log("🚀 ~ useLayoutEffect ~ translatedText:", translatedText.current, text, document.querySelector("#translatedText"));
+    }
+  }, [result?.translatedText]);
 
   return (
     <StyledCard title="文本翻译">
@@ -162,7 +260,7 @@ export default function TranslationForm({
         <Col xs={24} sm={11}>
           <LanguageSelector value={sourceLanguage} onChange={onSourceLanguageChange} label="源语言" />
         </Col>
-        <Col xs={24} sm={2} style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+        <Col xs={24} sm={2} style={{ display: "flex", justifyContent: "center", alignItems: "center", marginTop: 24 }}>
           <Button icon={<SwapOutlined />} onClick={onSwapLanguages} disabled={sourceLanguage === "auto" || loading} />
         </Col>
         <Col xs={24} sm={11}>
@@ -193,7 +291,9 @@ export default function TranslationForm({
             onChange={(e) => dispatch(setModelType(e))}
             options={[
               { value: "deepseek/deepseek-chat-v3-0324:free", label: "deepseek/deepseek-chat-v3-0324:free" },
-              { value: "google/gemini-2.5-pro-exp-03-25:free", label: "google/gemini-2.5-pro-exp-03-25:free" },
+              { value: "deepseek/deepseek-r1:free", label: "deepseek/deepseek-r1:free" },
+              { value: "qwen/qwen2.5-vl-32b-instruct:free", label: "qwen/qwen2.5-vl-32b-instruct:free" },
+              { value: "google/gemini-2.5-pro-exp-03-25:free", label: "google/gemini-2.5-pro-exp-03-25:free", disabled: true },
             ]}
           />
           <FileUploader onFileContent={handleFileContent} />
@@ -207,11 +307,16 @@ export default function TranslationForm({
           <div style={{ marginBottom: 8 }}>
             <Space>
               <Text type="secondary">翻译结果</Text>
-              <Button type="text" icon={<SoundOutlined />} onClick={speakText} danger={isSpeaking} />
+              <Button type="text" icon={<SoundOutlined />} onClick={speakText} danger={isSpeaking} title="仅支持英文和中文" />
               <Button type="text" icon={<CopyOutlined />} onClick={copyResult} />
             </Space>
           </div>
-          <Paragraph ref={translatedText}>{result.translatedText}</Paragraph>
+          <Paragraph>
+            <div dangerouslySetInnerHTML={{ __html: translatedText }}></div>
+          </Paragraph>
+
+          {/* 添加推荐模块 */}
+          {result.recommendations && <RecommendationsSection recommendations={result.recommendations} />}
         </div>
       )}
     </StyledCard>

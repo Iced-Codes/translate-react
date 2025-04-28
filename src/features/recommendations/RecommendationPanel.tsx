@@ -77,14 +77,7 @@ export default function RecommendationPanel({ result }: RecommendationPanelProps
   ];
   return (
     <StyledCard title="相关推荐">
-      <Tabs defaultActiveKey="current" items={tabsItem}>
-        {/* <TabPane tab="当前翻译" key="current">
-          <Spin spinning={loading}>{renderTags(recommendations)}</Spin>
-        </TabPane>
-        <TabPane tab="历史推荐" key="history">
-          {renderTags(frequentTerms)}
-        </TabPane> */}
-      </Tabs>
+      <Tabs defaultActiveKey="current" items={tabsItem}></Tabs>
     </StyledCard>
   );
 }
